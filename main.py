@@ -1,62 +1,23 @@
-from fastapi import FastAPI
-import joblib
 import pandas as pd
-from app.schemas import PatientData
 
-app = FastAPI()
+def load_data(path="data/raw/healthcare_dataset.csv"):
+    df = pd.read_csv(path)
 
-# Load trained model and encoders
-model = joblib.load("models/model.joblib")
-encoders = joblib.load("models/encoders.joblib")
+    print("Shape:", df.shape)
+    print("\nColumns:", df.columns)
+    print("\nMissing values:\n", df.isnull().sum())
 
-@app.get("/")
-def home():
-    return {"message": "Healthcare ML API is running"}
+    return df
 
-@app.post("/predict")
-def predict(data: PatientData):
-    # Convert input to DataFrame
-    df = pd.DataFrame([data.dict()])
 
-    # Rename columns to match training data
-    df.columns = [
-        "Age",
-        "Gender",
-        "Blood Type",
-        "Medical Condition",
-        "Billing Amount",
-        "Admission Type",
-        "Insurance Provider",
-        "Medication",
-        "Length of Stay"
-    ]
+def main():
+    print("  Starting Healthcare ML Pipeline...\n")
 
-    # Apply encoders
-    for col in df.columns:
-        if col in encoders:
-            df[col] = encoders[col].transform(df[col])
+    df = load_data()
 
-    # ✅ FORCE CORRECT COLUMN ORDER (THIS FIXES YOUR ERROR)
-    df = df[[
-        "Age",
-        "Gender",
-        "Blood Type",
-        "Medical Condition",
-        "Insurance Provider",
-        "Billing Amount",
-        "Admission Type",
-        "Medication",
-        "Length of Stay"
-    ]]
+    print("\n Data loaded successfully")
+    print(df.head())
 
-    # Predict
-    prediction = model.predict(df)[0]
 
-    # Map output
-    mapping = {
-        0: "normal",
-        1: "abnormal",
-        2: "inconclusive"
-    }
-
-    return {"predicted_test_result": mapping[int(prediction)]}
+if __name__ == "__main__":
+    main()
